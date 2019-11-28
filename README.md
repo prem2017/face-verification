@@ -1,4 +1,4 @@
-# Varifying Faces In Paired Images <!-- (https://gist.github.com/prats226/d3da93412fef04e3b55b85fed56839e5) -->
+# Verifying Faces In Paired Images <!-- (https://gist.github.com/prats226/d3da93412fef04e3b55b85fed56839e5) -->
  - A transfer learning for verifying faces in pair of images. 
 
 ## Objective:
