@@ -24,6 +24,9 @@ import fr_util as futil
 
 device = util.get_training_device()
 
+
+#----------------------------------------------------------------------------
+
 def compute_label_and_prob(pred: torch.Tensor, th=0.5):
 	"""Computes probability  and label/class with given threshold."""
 	pred_prob = pred.sigmoid()
@@ -32,6 +35,8 @@ def compute_label_and_prob(pred: torch.Tensor, th=0.5):
 	label[label < th] = 0
 	return label,  pred_prob
 
+
+#----------------------------------------------------------------------------
 
 # val_report, f1_checker, roc = gen_conf_and_cls_report(y_true_all, y_pred_all)
 def gen_metric_report(ytrue: torch.Tensor, ypred: torch.Tensor):
@@ -55,7 +60,7 @@ def gen_metric_report(ytrue: torch.Tensor, ypred: torch.Tensor):
 	return report, f1_checker, auc
 
 
-
+#----------------------------------------------------------------------------
 
 def load_trained_model(model_fname, use_batchnorm):
 	"""Loads the pretrained model for the given model name."""
@@ -78,6 +83,8 @@ def load_trained_model(model_fname, use_batchnorm):
 	return model
 
 
+#----------------------------------------------------------------------------
+
 def extract_img_features(img_path, model_img_size, data_normalizer, features_extractor_model, type_tensor=True):
 	"""Call feature extractor method to get image representation """
 
@@ -91,6 +98,8 @@ def extract_img_features(img_path, model_img_size, data_normalizer, features_ext
 	return features
 
 
+#----------------------------------------------------------------------------
+
 def compute_input_feature(img_path1: str, img_path2: str):
 	"""Using pair of image computes a feature representaion on the them for example chi-distributed feature"""
 	model_img_size = futil.get_model_img_size()
@@ -103,6 +112,7 @@ def compute_input_feature(img_path1: str, img_path2: str):
 	return futil.compute_diff_vector(img1_features.reshape(-1), img2_features.reshape(-1))
 
 	
+#----------------------------------------------------------------------------
 
 def predict_on_test(model, img_path1, img_path2, th=0.5):
 	""" """
@@ -116,7 +126,7 @@ def predict_on_test(model, img_path1, img_path2, th=0.5):
 	return label, prob
 
 
-
+#----------------------------------------------------------------------------
 
 def get_arguments_parser(img1_datapath, img2_datapath):
 	"""Argument parser for predition"""
@@ -134,6 +144,8 @@ def get_arguments_parser(img1_datapath, img2_datapath):
 
 	return parser
 
+
+#----------------------------------------------------------------------------
 
 def main(base_model_fname, img1_datapath, img2_datapath, use_batchnorm=False, th=0.5):
 	ex =  '_minval' # 
@@ -167,7 +179,7 @@ def main(base_model_fname, img1_datapath, img2_datapath, use_batchnorm=False, th
 	return output
 		
 
-
+#----------------------------------------------------------------------------
 
 if __name__ == '__main__':
 	print('[Run Test]')
@@ -185,7 +197,7 @@ if __name__ == '__main__':
 	img2_datapath = None # util.get_full_imgpath('Ann_Veneman', 11)
 	main(base_model_fname, img1_datapath, img2_datapath, use_batchnorm, th)
 
-	
+
 
 
 

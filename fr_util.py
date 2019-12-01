@@ -29,6 +29,9 @@ get_pair_encoding = lambda: K_PAIR_ENCODING
 # Cosine similarity
 cosine_similarity = lambda a, b: dot(a, b) / ((norm(a) * norm(b)))
 
+
+#----------------------------------------------------------------------------
+
 # Resize image
 def load_and_resize_image(img_path, model_image_size):
 	"""Reads the image and resizes it.
@@ -58,11 +61,15 @@ def load_and_resize_image(img_path, model_image_size):
 	return image_data
 
 
+#----------------------------------------------------------------------------
+
 # Load the pretrained model
 def get_pretrained_face_cropper():
 	mtcnn = MTCNN()
 	return mtcnn
 
+
+#----------------------------------------------------------------------------
 
 def get_pretrained_feature_extractor():
 	"""Downloads pre-trained network for feature extraction  
@@ -73,6 +80,13 @@ def get_pretrained_feature_extractor():
 	return resnet
 
 
+#----------------------------------------------------------------------------
+
+def get_feature_extractor_info():
+	"""Return tuple of pretrained feature extractor and its best-input image size for the extractor"""
+	return get_pretrained_feature_extractor(), K_MODEL_IMAGE_SIZE
+
+#----------------------------------------------------------------------------
 
 def extract_features_with_nomalization(img_path, model_size, data_normalizer, features_extractor_model, type_tensor=False):
 	"""Resizes the data according to model-size, normalizes it and then
@@ -109,6 +123,7 @@ def extract_features_after_cropping_face(img_path, face_cropper_model, features_
 		return img_feature.detach().numpy()
 
 
+#----------------------------------------------------------------------------
 
 def extract_features(data_tensor, feature_extractor_model, type_tensor=True):
 	""" Extracte features 
@@ -116,6 +131,7 @@ def extract_features(data_tensor, feature_extractor_model, type_tensor=True):
 	return feature_extractor_model(data_tensor.unsqueeze(0).detach().squeeze()) # 1D return 
 
 
+#----------------------------------------------------------------------------
 
 def compute_diff_vector(img1_feature, img2_feature, type_chi=True):
 	""" [Deep Face Recognition: A Survey](https://arxiv.org/abs/1804.06655)

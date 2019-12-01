@@ -37,13 +37,7 @@ class FaceNet(nn.Module):
 					self.nonlinearity_function,
 					nn.Dropout(dropout, inplace=True),
 
-					nn.Linear(in_features=(hidden_dimensions // 2**2), out_features=(hidden_dimensions // 2**3)),
-					nn.BatchNorm1d((hidden_dimensions // 2**3), eps=1e-6),
-					self.nonlinearity_function,
-					nn.Dropout(dropout, inplace=True),
-
-					nn.Linear(in_features=(hidden_dimensions // 2**3), out_features=output_dimension)
-				) 
+					nn.Linear(in_features=(hidden_dimensions // 2**2), out_features=output_dimension)) 
 		else:
 			self.fc_layers = nn.Sequential(
 				nn.Linear(in_features=input_dimension, out_features=hidden_dimensions),
@@ -59,11 +53,9 @@ class FaceNet(nn.Module):
 				nn.Dropout(dropout, inplace=True),
 
 
-				nn.Linear(in_features=hidden_dimensions // 2 **2, out_features=output_dimension),
+				nn.Linear(in_features=hidden_dimensions // 2 **2, out_features=output_dimension)) 
 
-			) 
-
-
+	
 	def forward(self, X):
 		# pdb.set_trace()
 		out = self.fc_layers(X)

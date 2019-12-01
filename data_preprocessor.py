@@ -22,6 +22,7 @@ from transformers import NormalizeImageData
 import util
 import fr_util as futil
 
+#----------------------------------------------------------------------------
 
 class FeatureExtractor(object):
 	"""Extracts features for images and saves them in CSV along with division of train/dev/test sets
@@ -123,6 +124,7 @@ class FeatureExtractor(object):
 
 		return df, local_pair_dicts
 
+
 	def construct_and_save(self, df_same, df_diff, fpath, dict_path, ftype):
 		break_index = -1
 		print(f'\n\n[{ftype}]')
@@ -138,6 +140,7 @@ class FeatureExtractor(object):
 
 		df.to_csv(fpath, index=False)
 		util.PickleHandler.dump_in_pickle(pairs_dict, dict_path)
+
 
 
 	def tabulate_image_extracted_features(self, is_cropped=False, ext=''):
@@ -169,6 +172,7 @@ class FeatureExtractor(object):
 		
 
 
+#----------------------------------------------------------------------------
 
 if __name__ == '__main__':
 	print('[Preprocessor module] ')
@@ -181,4 +185,5 @@ if __name__ == '__main__':
 	print('[Complete] Feature extraction Complete')	
 
 
+#----------------------------------------------------------------------------
 

@@ -25,16 +25,21 @@ from torch.optim.lr_scheduler import MultiStepLR
 from models import FaceNet
 from img_dataset import ImageDataset
 from predictor import gen_metric_report
+from transformers import RandomNoiseImage, NormalizeImageData, MirrorImage, InvertVerticallyImage
+from transformers import MirrorAndInvertVerticallyImage, Rotate90Image, Rotate270Image, RandomColorShifter 
 
 import util
 from util import logger
 import fr_util as futil
 
-device = util.get_training_device()
 
+#----------------------------------------------------------------------------
+
+device = util.get_training_device()
 criterion = nn.BCEWithLogitsLoss() # Numericlly more stable
 
 
+#----------------------------------------------------------------------------
 
 class Optimizer(object):
 	"""Different optimizer of optimize learning process than vanilla greadient descent """
@@ -57,6 +62,7 @@ class Optimizer(object):
 
 
 
+#----------------------------------------------------------------------------
 
 def train_network(dataloader, model, loss_function, optimizer, start_lr, end_lr, num_epochs=90, sanity_check=False):
 	"""Trains the network and saves for different checkpoints such as minimum train/val loss, f1-score, AUC etc. different performance metrics
@@ -289,7 +295,7 @@ def train_network(dataloader, model, loss_function, optimizer, start_lr, end_lr,
 	model = save_model(model)
 
 
-
+#----------------------------------------------------------------------------
 
 def cal_loss_and_metric(model: torch.nn.Module, 
 						dataloader: torch.utils.data.DataLoader, 
@@ -329,6 +335,7 @@ def cal_loss_and_metric(model: torch.nn.Module,
 
 
 
+#----------------------------------------------------------------------------
 
 # Plot training loss
 def plot_loss(losses, plot_file_name='training_loss.png', title='Training Loss', xlabel='Epochs'):
@@ -350,6 +357,8 @@ def plot_loss(losses, plot_file_name='training_loss.png', title='Training Loss',
 	fig.savefig(full_path)
 	plt.close(fig)  # clo
 
+
+#----------------------------------------------------------------------------
 
 def plot_roc_curves_binclass(roc_data, epoch_iter, model_type='val_set'):
 	"""Plots ROC curve after each iteration """
@@ -386,6 +395,8 @@ def plot_roc_curves_binclass(roc_data, epoch_iter, model_type='val_set'):
 	plt.close(fig)
 
 
+#----------------------------------------------------------------------------
+
 def save_model(model, extra_extension=""):
 	msg = '[Save] model extra_extension = {}'.format(extra_extension)
 	logger.info(msg); print(msg)
@@ -401,9 +412,7 @@ def save_model(model, extra_extension=""):
 	return models_dict
 
 
-
-
-
+#----------------------------------------------------------------------------
 
 # Pre-requisite setup for training process
 def train_model(train_data_info, val_data_info, test_data_info, sanity_check=False):
@@ -483,30 +492,10 @@ def train_model(train_data_info, val_data_info, test_data_info, sanity_check=Fal
 	train_network(**train_params)
 
 
+#----------------------------------------------------------------------------
 
 def main(sanity_check=False):
 
-	# Sanity check of the model for learning
-	# TODO: put the sanity check in util or make some setup file
-	sanity_check = sanity_check
-	util.set_trained_model_name(ext_cmt='on_ext_features')
-
-
-	train_data_info = {'feature_path': util.get_train_feature_path(), 'pairs_imgnames_relpath_dict': util.get_train_pairs_imgnames_relpath_dict()}
-	val_data_info = {'feature_path': util.get_val_feature_path(), 'pairs_imgnames_relpath_dict': util.get_val_pairs_imgnames_relpath_dict()}
-	test_data_info = {'feature_path': util.get_test_feature_path(), 'pairs_imgnames_relpath_dict': util.get_test_pairs_imgnames_relpath_dict()}
-
-
-
-	msg = '[Datapath] \nTrain = {}, \nValidation = {}'.format(train_data_info, val_data_info)
-	logger.info(msg); print(msg)
-	train_model(train_data_info=train_data_info, val_data_info=val_data_info, test_data_info=test_data_info, sanity_check=sanity_check)
-	
-
-
-
-if __name__ == '__main__':
-	print('Trainer')
 	torch.manual_seed(999)
 	if torch.cuda.is_available():
 		torch.cuda.manual_seed(999)
@@ -516,9 +505,48 @@ if __name__ == '__main__':
 	util.reset_logger()
 	print('Pid = ', os.getpid())
 
+	# Sanity check of the model for learning
+	# TODO: put the sanity check in util or make some setup file
+	sanity_check = sanity_check
+	util.set_trained_model_name(ext_cmt='on_ext_features')
+
+	transformers_args = {}
+	transformers_args['transformers'] = [RandomNoiseImage(), MirrorImage(), InvertVerticallyImage(), MirrorAndInvertVerticallyImage(), Rotate90Image(), Rotate270Image(), RandomColorShifter()]
+	transformers_args['use_transformer_flag'] = True
+
+	train_data_info = {'feature_path': util.get_train_feature_path(), 'pairs_imgnames_relpath_dict': util.get_train_pairs_imgnames_relpath_dict(), **transformers_args}
+	val_data_info = {'feature_path': util.get_val_feature_path(), 'pairs_imgnames_relpath_dict': util.get_val_pairs_imgnames_relpath_dict()}
+	test_data_info = {'feature_path': util.get_test_feature_path(), 'pairs_imgnames_relpath_dict': util.get_test_pairs_imgnames_relpath_dict()}
+
+
+	msg = '[Datapath] \nTrain = {}, \nValidation = {}'.format(train_data_info, val_data_info)
+	logger.info(msg); print(msg)
+	train_model(train_data_info=train_data_info, val_data_info=val_data_info, test_data_info=test_data_info, sanity_check=sanity_check)
+	
+
+
+#----------------------------------------------------------------------------
+
+if __name__ == '__main__':
+	print('Trainer')
+
 	main(sanity_check=False)
 
-	msg = '\n\n********************** Training Complete **********************\n\n'
-	logger.info(msg); print(msg)
+	logger.info('\n\n********************** Training Complete **********************\n\n')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	
