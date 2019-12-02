@@ -19,9 +19,10 @@
 
  * Even further, a better approach is presented by Taigman et al. ([Deep Face: Closing the Gap to Human-Level Performance in Face Verification](https://www.cs.toronto.edu/~ranzato/publications/taigman_cvpr14.pdf)) is to use chi-square similarity:
    
-   - which is element-wise operation where square of difference is reduced by factor of sum of corresponding element in vector representation: `\sum_{k=1}^{m} w_i (\frac{|f(x^i_k) - f(x^j_k)|^2}{f(x^i_k) + f(x^j_k)}) + b`: 
+   - which is element-wise operation where square of difference is reduced by factor of sum of corresponding element in vector representation:
 
-   - ![](gif.gif)
+     ![](https://latex.codecogs.com/svg.latex?%5Csum_%7Bk%3D1%7D%5E%7Bm%7D%20w_i%20%28%5Cfrac%7B%7Cf%28x%5Ei_k%29%20-%20f%28x%5Ej_k%29%7C%5E2%7D%7Bf%28x%5Ei_k%29%20&plus;%20f%28x%5Ej_k%29%7D%29%20&plus;%20b) <!-- https://www.codecogs.com/latex/eqneditor.php -->
+
 
  * With this approach we further detail the network architecture, training and inference method.
 

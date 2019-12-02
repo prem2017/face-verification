@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+
+# ©Prem Prakash
+# Image dataset
+
+
 import os
 import pdb
 import random
@@ -33,10 +38,8 @@ class ImageDataset(Dataset):
 		self.image_pair_rel_path_dict = util.PickleHandler.extract_from_pickle(pairs_imgnames_relpath_dict)
 		self.rel_path_keys = list(self.image_pair_rel_path_dict.keys())
 		random.shuffle(self.rel_path_keys)
-		random.shuffle(self.rel_path_keys)
 
 		self.transformers = transformers
-		# self.transformers_len = len(transformers) if transformers is not None else 0
 		self.use_transformer_flag = use_transformer_flag 
 		if transformers is None:
 			self.use_transformer_flag = False
@@ -83,7 +86,7 @@ class ImageDataset(Dataset):
 
 	
 		if self.use_transformer_flag and transforming_chance1:
-			feature1 = self.get_transformed_features(rel_path1, )
+			feature1 = self.get_transformed_features(rel_path1)
 		else:
 			feature1 = self.df_features.loc[rel_path1].values.reshape(-1, 512)[0, :]
 			# print('[Loaded] feature1.dtype = ', feature1.dtype)
@@ -103,9 +106,72 @@ class ImageDataset(Dataset):
 
 
 
+#----------------------------------------------------------------------------
+
+class ImageDatasetPT(Dataset):
+	"""docstring for ImageDatasetPT"""
+
+	def __init__(self, pairs_imgnames_relpath_dict, transformers=None, use_transformer_flag=False, type_chi=True):
+		super(ImageDatasetPT, self).__init__()
+		
+		self.image_pair_rel_path_dict = util.PickleHandler.extract_from_pickle(pairs_imgnames_relpath_dict)
+		self.rel_path_keys = list(self.image_pair_rel_path_dict.keys())
+		random.shuffle(self.rel_path_keys)
+
+		self.transformers = transformers
+		self.use_transformer_flag = use_transformer_flag 
+		if transformers is None:
+			self.use_transformer_flag = False
+
+		self.pretrained_input_model_size = futil.get_model_img_size()
+
+		self.normalizer = NormalizeImageData()
+		self.type_chi = type_chi
 
 
 
+	def get_transformed_image(self, img_rel_path, transform):
+		img_path = util.get_full_imgpath_given_relpath(img_rel_path)
+
+		img = futil.load_and_resize_image(img_path, self.pretrained_input_model_size)
+		
+		if transform:
+			trasform_func = random.choice(self.transformers)
+			img = trasform_func(img)
+
+		img_norml = self.normalizer(img) 
+
+		img_norml_ch_first = np.transpose(img_norml, (2, 0, 1))
+
+		return img_norml_ch_first
+
+
+	def __len__(self):
+		return len(self.rel_path_keys)
+
+
+	def __getitem__(self, index):
+		rel_path1, rel_path2 = self.rel_path_keys[index] # rel_path_keys has tuple as dict
+		label = self.image_pair_rel_path_dict[(rel_path1, rel_path2)]
+
+		transforming_chance1 = np.random.randint(2) 
+		transforming_chance2 = np.random.randint(2)
+
+	
+		if self.use_transformer_flag and transforming_chance1:
+			feature1 = self.get_transformed_image(rel_path1, True)
+		else:
+			feature1 = self.get_transformed_image(rel_path1, False)
+			# print('[Loaded] feature1.dtype = ', feature1.dtype)
+
+
+		if self.use_transformer_flag and transforming_chance2:
+			feature2 = self.get_transformed_image(rel_path2, True)
+		else:
+			feature2 = self.get_transformed_image(rel_path2, False)
+			# print('[Loaded] feature2.dtype = ', feature2.dtype)
+
+		return (feature1, feature2), np.array(label).reshape(-1)
 
 
 

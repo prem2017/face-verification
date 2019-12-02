@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# ©Prem Prakash
+# Different transformers for data augmentation.
+
 
 import os
 import pdb

@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
 
+# ©Prem Prakash
+# Main module to train the model
+
+
 import os
 import math
 import pdb
 import time
 from datetime import datetime
-
-
-
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,9 +22,8 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import MultiStepLR
 
 
-
-from models import FaceNet
-from img_dataset import ImageDataset
+from models import FaceNet, SiameseFaceNet
+from img_dataset import ImageDataset, ImageDatasetPT
 from predictor import gen_metric_report
 from transformers import RandomNoiseImage, NormalizeImageData, MirrorImage, InvertVerticallyImage
 from transformers import MirrorAndInvertVerticallyImage, Rotate90Image, Rotate270Image, RandomColorShifter 
@@ -129,7 +129,7 @@ def train_network(dataloader, model, loss_function, optimizer, start_lr, end_lr,
 	if util.get_search_lr_flag():
 		extra_epochs = 4
 	else:
-		extra_epochs = 20
+		extra_epochs = 10
 	total_epochs = num_epochs + extra_epochs
 
 	# One cycle setting of Learning Rate
@@ -171,14 +171,14 @@ def train_network(dataloader, model, loss_function, optimizer, start_lr, end_lr,
 			loss = 0
 			# pdb.set_trace()
 
-
-			x = x.to(device=device, dtype=torch.float)
-			y = y.to(device=device, dtype=torch.float)
+			if not util.get_use_pretrained_flag(): 
+				x = x.to(device=device, dtype=torch.float32)
+			y = y.to(device=device, dtype=torch.float32)
 			
 			# TODO: early breaker
-			# if i == 2:
-			# 	print('[Break] by force for validation check')
-			# 	break
+			if i == 1:
+				print('[Break] by force for validation check')
+				break
 
 			
 			optimizer.zero_grad()
@@ -238,7 +238,7 @@ def train_network(dataloader, model, loss_function, optimizer, start_lr, end_lr,
 			  %(epoch+1, total_epochs, start_lr, get_lr(), avg_epoch_loss_container, avg_val_loss_container, None if not val_report_container else util.pretty(val_report_container[-1]), f1_checker_container)
 		logger.info(msg); print(msg)
 
-		if not (util.get_search_lr_flag() or sanity_check) or test_test_data:
+		if not (util.get_search_lr_flag() or sanity_check) and test_test_data:
 			test_loss, test_report, test_f1_checker, test_auc = cal_loss_and_metric(model, dataloader['test'], loss_function, epoch+1, model_type='test_set')
 			test_report['roc'] = 'Removed'
 			test_auc_container[epoch+1] = "{0:.3f}".format(round(test_auc, 4)) 
@@ -305,6 +305,7 @@ def cal_loss_and_metric(model: torch.nn.Module,
 	"""Computes loss on val/test data and return a prepared metric report on that"""
 	
 	model = model.eval()
+	# pdb.set_trace()
 	
 	loss = 0
 	y_pred_all = None
@@ -313,8 +314,8 @@ def cal_loss_and_metric(model: torch.nn.Module,
 		for i, (x, y) in enumerate(dataloader): # last one is true image size
 			# print('[Val/Test] i = ', i)
 			# loss = 0
-			
-			x = x.to(device=device, dtype=torch.float)
+			if not util.get_use_pretrained_flag():
+				x = x.to(device=device, dtype=torch.float)
 			y = y.to(device=device, dtype=torch.float)
 
 			y_pred = model(x)
@@ -415,7 +416,7 @@ def save_model(model, extra_extension=""):
 #----------------------------------------------------------------------------
 
 # Pre-requisite setup for training process
-def train_model(train_data_info, val_data_info, test_data_info, sanity_check=False):
+def train_model(train_data_info, val_data_info, test_data_info, sanity_check=False, use_pretrained=False):
 	"""Setup all the pre-requisites for complete training of the model 
 
 		Parameters:
@@ -437,7 +438,7 @@ def train_model(train_data_info, val_data_info, test_data_info, sanity_check=Fal
 	if util.get_search_lr_flag() :
 		start_lr, end_lr, epochs = 1e-6, 10, 20 # 
 	else:
-		start_lr, end_lr, epochs = 5e-5, 2e-4, 70 # 5e-5, 2e-4, 70   3e-3, 6e-3, 70  2e-3, 9e-3, 70 # 1e-3, 5e-3, 50 # 7e-3, 11e-3, 70
+		start_lr, end_lr, epochs =  5e-5, 2e-4, 1 # 5e-5, 2e-4, 70   3e-3, 6e-3, 70  2e-3, 9e-3, 70 # 1e-3, 5e-3, 50 # 7e-3, 11e-3, 70
 	train_params['start_lr'] = start_lr = start_lr
 	train_params['end_lr'] = end_lr
 	train_params['num_epochs'] = epochs
@@ -455,9 +456,14 @@ def train_model(train_data_info, val_data_info, test_data_info, sanity_check=Fal
 
 
 	dataset = {}
-	dataset['train'] = ImageDataset(**train_data_info)
-	dataset['val'] = ImageDataset(**val_data_info)
-	dataset['test'] = ImageDataset(**test_data_info)
+	if util.get_use_pretrained_flag:
+		dataset['train'] = ImageDatasetPT(**train_data_info)
+		dataset['val'] = ImageDatasetPT(**val_data_info)
+		dataset['test'] = ImageDatasetPT(**test_data_info)
+	else:
+		dataset['train'] = ImageDataset(**train_data_info)
+		dataset['val'] = ImageDataset(**val_data_info)
+		dataset['test'] = ImageDataset(**test_data_info)
 
 
 	dataloader = {}
@@ -474,7 +480,12 @@ def train_model(train_data_info, val_data_info, test_data_info, sanity_check=Fal
 	net_args['nonlinearity_function'] = None
 	net_args['dropout'] = dropout
 	net_args['use_batchnorm'] = use_batchnorm
-	model =  FaceNet(**net_args)
+
+	if util.get_use_pretrained_flag():
+		# net_args['eps'] = 1e-3
+		model = SiameseFaceNet(**net_args)
+	else:
+		model = FaceNet(**net_args) 
 
 	train_params['model'] = model = model.to(device)
 
@@ -514,9 +525,14 @@ def main(sanity_check=False):
 	transformers_args['transformers'] = [RandomNoiseImage(), MirrorImage(), InvertVerticallyImage(), MirrorAndInvertVerticallyImage(), Rotate90Image(), Rotate270Image(), RandomColorShifter()]
 	transformers_args['use_transformer_flag'] = True
 
-	train_data_info = {'feature_path': util.get_train_feature_path(), 'pairs_imgnames_relpath_dict': util.get_train_pairs_imgnames_relpath_dict(), **transformers_args}
-	val_data_info = {'feature_path': util.get_val_feature_path(), 'pairs_imgnames_relpath_dict': util.get_val_pairs_imgnames_relpath_dict()}
-	test_data_info = {'feature_path': util.get_test_feature_path(), 'pairs_imgnames_relpath_dict': util.get_test_pairs_imgnames_relpath_dict()}
+	train_data_info = {'pairs_imgnames_relpath_dict': util.get_train_pairs_imgnames_relpath_dict(), **transformers_args}
+	val_data_info = {'pairs_imgnames_relpath_dict': util.get_val_pairs_imgnames_relpath_dict()}
+	test_data_info = {'pairs_imgnames_relpath_dict': util.get_test_pairs_imgnames_relpath_dict()}
+	
+	if not util.get_use_pretrained_flag():
+		train_data_info = {'feature_path': util.get_train_feature_path(), **train_data_info}
+		val_data_info = {'feature_path': util.get_val_feature_path(), **val_data_info}
+		test_data_info = {'feature_path': util.get_test_feature_path(), **test_data_info}
 
 
 	msg = '[Datapath] \nTrain = {}, \nValidation = {}'.format(train_data_info, val_data_info)

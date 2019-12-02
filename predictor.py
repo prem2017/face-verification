@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+# ©Prem Prakash
+# Predictor module
+
+
 import pdb
 import os
 import sys
@@ -7,6 +11,7 @@ from copy import deepcopy
 import argparse
 
 from matplotlib.pyplot import imshow
+import numpy as np
 
 from sklearn.metrics import classification_report, confusion_matrix, f1_score, roc_auc_score, roc_curve # (y_true, y_score)
 
@@ -14,8 +19,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from models import FaceNet
-from img_dataset import ImageDataset
+from models import FaceNet, SiameseFaceNet
+from img_dataset import ImageDataset, ImageDatasetPT
 from transformers import NormalizeImageData
 
 import util 
@@ -67,17 +72,19 @@ def load_trained_model(model_fname, use_batchnorm):
 
 	model_path = os.path.join(util.get_models_dir(), model_fname)
 	model = {}
-	model = FaceNet(use_batchnorm=use_batchnorm) # # None)
+
+	if util.get_use_pretrained_flag():
+		model = SiameseFaceNet(use_batchnorm=use_batchnorm)
+	else:
+		model = FaceNet(use_batchnorm=use_batchnorm) # # None)
 
 	saved_state_dict = torch.load(model_path, map_location= lambda storage, loc: storage)
-	pretrained_yolo_model_state_dict = saved_state_dict
 
 	# Available dict
-
-	raw_model_dict = model.state_dict()
+	# raw_model_dict = model.state_dict()
 	
 
-	model.load_state_dict(pretrained_yolo_model_state_dict)
+	model.load_state_dict(saved_state_dict)
 	model = model.eval()
 
 	return model
@@ -111,15 +118,34 @@ def compute_input_feature(img_path1: str, img_path2: str):
 
 	return futil.compute_diff_vector(img1_features.reshape(-1), img2_features.reshape(-1))
 
+
+#----------------------------------------------------------------------------
 	
+def load_image_data(img_path):
+	model_img_size = futil.get_model_img_size()
+	data_normalizer = NormalizeImageData(means=[0.485, 0.456, 0.406], stds=[0.229, 0.224, 0.225]) # TODO: local
+
+	img = futil.load_and_resize_image(img_path, model_img_size)
+
+	img_norml = data_normalizer(img) 
+	img_norml_ch_first = np.transpose(img_norml, (2, 0, 1))
+
+	return torch.tensor(img_norml_ch_first).unsqueeze(0)
+
+
+
 #----------------------------------------------------------------------------
 
 def predict_on_test(model, img_path1, img_path2, th=0.5):
 	""" """
 		
-	x = compute_input_feature(img_path1, img_path2)
 	with torch.no_grad():
-		y = model(x.reshape(1, -1).float())
+		if util.get_use_pretrained_flag():
+			x = load_image_data(img_path1), load_image_data(img_path2)
+			y = model(x)
+		else:
+			x = compute_input_feature(img_path1, img_path2)
+			y = model(x.reshape(1, -1).float())
 
 	label, prob = compute_label_and_prob(y, th)
 
@@ -147,14 +173,27 @@ def get_arguments_parser(img1_datapath, img2_datapath):
 
 #----------------------------------------------------------------------------
 
-def main(base_model_fname, img1_datapath, img2_datapath, use_batchnorm=False, th=0.5):
+def main():
+
+	util.reset_logger('predictor_output.log')
+
+	# First set the model_name and load 
+	util.set_trained_model_name(ext_cmt='on_ext_features')
+	base_model_fname = util.get_trained_model_name()
+
+
+	use_batchnorm = False
+	th = 0.5
+
 	ex =  '_minval' # 
 	model_fnames = [base_model_fname + ex for ex in ['_maxf1']] #  ['', '_maxauc', '_maxf1', '_minval', '_mintrain'] 
 
+	img1_datapath = None # util.get_full_imgpath('Ann_Veneman', 5) 
+	img2_datapath = None # util.get_full_imgpath('Ann_Veneman', 11)
 	arg_parser = get_arguments_parser(img1_datapath, img2_datapath)
 	arg_parser = arg_parser.parse_args()
-	img1_datapath = arg_parser.img1
-	img2_datapath = arg_parser.img2
+	img1_datapath = arg_parser.img1 
+	img2_datapath = arg_parser.img2 
 
 	msg = '[Args]: \nimg1_datapath = {}, \nimg2_datapath = {}'.format(img1_datapath, img2_datapath)
 	logger.info(msg)
@@ -183,19 +222,7 @@ def main(base_model_fname, img1_datapath, img2_datapath, use_batchnorm=False, th
 
 if __name__ == '__main__':
 	print('[Run Test]')
-	
-	util.reset_logger('predictor_output.log')
-
-	# First set the model_name and load 
-	util.set_trained_model_name(ext_cmt='on_ext_features')
-	base_model_fname = util.get_trained_model_name()
-
-
-	use_batchnorm = False
-	th = 0.5
-	img1_datapath = None # util.get_full_imgpath('Ann_Veneman', 5) 
-	img2_datapath = None # util.get_full_imgpath('Ann_Veneman', 11)
-	main(base_model_fname, img1_datapath, img2_datapath, use_batchnorm, th)
+	main()
 
 
 

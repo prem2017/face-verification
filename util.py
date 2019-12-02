@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-""" ©Prem Prakash
-	General util methods
-"""
+# ©Prem Prakash
+# General util methods
+
 
 import os
 import sys
@@ -25,13 +25,16 @@ get_training_device =  lambda: torch.device("cuda:0" if torch.cuda.is_available(
 
 #---------------------------------------------------------------------------- Constants
 
-K_SEARCH_LR = SEARCH_LR = False
+K_SEARCH_LR  = False
 get_search_lr_flag = lambda: K_SEARCH_LR
+
+K_USE_PRETRAINED = True
+get_use_pretrained_flag = lambda: K_USE_PRETRAINED 
 
 
 #----------------------------------------------------------------------------  Batches
 
-K_TRAIN_BATCH_SIZE = 32
+K_TRAIN_BATCH_SIZE = 64
 get_train_batch_size = lambda: K_TRAIN_BATCH_SIZE
 
 K_VALIDATION_BATCH_SIZE = 16
