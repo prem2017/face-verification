@@ -11,7 +11,7 @@
  
  * For this task pre-trained [InceptionResnet](https://github.com/timesler/facenet-pytorch) is used, that has been trained to classify faces of more than 10K people, thus making it more suitable for this task.
  
- * With image embedding extracted from pre-trained network one can go various ways to solve the problem such as classification for differentiating paired images, or a thresholded gap in distance space or some notion of distance. Nonetheless, given the limited time I took the approach of solving this as a classification problem which a bit fast and is also effective.
+ * With image embedding extracted from pre-trained network one can go various ways to solve the problem such as classification for differentiating paired images, or a thresholded gap in distance space or some notion of distance. Nonetheless, this is solved as a classification problem which a bit fast and is also effective.
 
  * Furthermore, image representation is precomputed and stored on disk to avoid computation at training time. While this clearly has advantages but restricts us in training the layers of the CNN network (used for extraction) which can prove to be more effective in obtaining a better model.
 
@@ -88,7 +88,7 @@
 
 
 
-## Future works
+## Future work
 
  * As indicated earlier precomputed features are used for this task which is restrictive in a way that we don't leverage the architecture of the pre-trained network to unfreeze a few of the penultimate layers and traine them as per our task. This step alone can boost performance further.
  
