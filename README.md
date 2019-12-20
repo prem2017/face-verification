@@ -88,7 +88,7 @@
 
 
 
-## Future work
+## Further work
 
  * As indicated earlier precomputed features are used for this task which is restrictive in a way that we don't leverage the architecture of the pre-trained network to unfreeze a few of the penultimate layers and traine them as per our task. This step alone can boost performance further.
  
